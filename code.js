@@ -1,4 +1,3 @@
-
 var fs = require('fs');
 
 var config = require("./config");
@@ -22,150 +21,147 @@ var headers = {
 };
 
 var dataString = {
-  "bookingSession":{
-    "socialSecurityNumber": config.socialSecurityNumber,
-    "licenceId":5,
-    "bookingModeId":0,
-    "ignoreDebt":false,
-    "examinationTypeId":0
-  },
-  "occasionBundleQuery":{
-    "startDate": new Date(Date.now()).toISOString(),
-    "languageId":13,
-    "vehicleTypeId":2,
-    "tachographTypeId":1,
-    "occasionChoiceId":1,
-    "examinationTypeId":0
-  }
+    "bookingSession": {
+        "socialSecurityNumber": config.socialSecurityNumber,
+        "licenceId": 5,
+        "bookingModeId": 0,
+        "ignoreDebt": false,
+        "examinationTypeId": 0
+    },
+    "occasionBundleQuery": {
+        "startDate": new Date(Date.now()).toISOString(),
+        "languageId": 13,
+        "vehicleTypeId": 2,
+        "tachographTypeId": 1,
+        "occasionChoiceId": 1,
+        "examinationTypeId": 0
+    }
 };
 
 
-
 var locationSettings = [
-  // Lund
-  {
-    'city': "Lund",
-    'locationId': 1000062,
-    'lastSavedDate': null,
-    'firstLoad': true
-  },
-  // Eslöv
-  {
-    'city': "Eslov",
-    'locationId': 1000065,
-    "lastSavedDate": null,
-    'firstLoad': true
-  },
-  // Malmö
-  {
-    'city': "Malmö",
-    'locationId': 1000061,
-    "lastSavedDate": null,
-    'firstLoad': true
-  },
-  {
-    'city': "Trelleborg",
-    'locationId': 1000063,
-    "lastSavedDate": null,
-    'firstLoad': true
-  },
-  {
-    'city': "Landskrona",
-    'locationId': 1000124,
-    "lastSavedDate": null,
-    'firstLoad': true
-  },
-  {
-    'city': "Ystad",
-    'locationId': 1000064,
-    "lastSavedDate": null,
-    'firstLoad': true
-  },
-  {
-    'city': "Kristianstad",
-    'locationId': 1000046,
-    "lastSavedDate": null,
-    'firstLoad': true
-  }
+    // Lund
+    {
+        'city': "Lund",
+        'locationId': 1000062,
+        'lastSavedDate': null,
+        'firstLoad': true
+    },
+    // Eslöv
+    {
+        'city': "Eslov",
+        'locationId': 1000065,
+        "lastSavedDate": null,
+        'firstLoad': true
+    },
+    // Malmö
+    {
+        'city': "Malmö",
+        'locationId': 1000061,
+        "lastSavedDate": null,
+        'firstLoad': true
+    },
+    {
+        'city': "Trelleborg",
+        'locationId': 1000063,
+        "lastSavedDate": null,
+        'firstLoad': true
+    },
+    {
+        'city': "Landskrona",
+        'locationId': 1000124,
+        "lastSavedDate": null,
+        'firstLoad': true
+    },
+    {
+        'city': "Ystad",
+        'locationId': 1000064,
+        "lastSavedDate": null,
+        'firstLoad': true
+    },
+    {
+        'city': "Kristianstad",
+        'locationId': 1000046,
+        "lastSavedDate": null,
+        'firstLoad': true
+    }
 ];
 
-function schedule(){
-  consoleLog("Running schedule");
-  locationSettings.forEach(function(element, index) {
-    var tempDataString = dataString;
-    // Set the id for the query
-    tempDataString.occasionBundleQuery.locationId = element.locationId;
-    var city = null;
-    var time = null;
-    var options = {
-        url: 'https://fp.trafikverket.se/Boka/occasion-bundles',
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(tempDataString)
-    };
+function schedule() {
+    consoleLog("Running schedule");
+    locationSettings.forEach(function (element, index) {
+        var tempDataString = dataString;
+        // Set the id for the query
+        tempDataString.occasionBundleQuery.locationId = element.locationId;
+        var city = null;
+        var time = null;
+        var options = {
+            url: 'https://fp.trafikverket.se/Boka/occasion-bundles',
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(tempDataString)
+        };
 
-    request(options, function(error, response, body) {
-      body = JSON.parse(body);
-      // Successful connection without errors
-      if (!error && response.statusCode == 200 && Array.isArray(body.data) && body.data.length > 0) {
 
-        // The fist array is always the one that is nearest in time
-        var responseNearestDateWrittenTest = new Date(body.data[0].occasions[0].date + " " + body.data[0].occasions[0].time);
-        var responseNearestDatePracticalTest = new Date(body.data[0].occasions[1].date + " " + body.data[0].occasions[1].time);
+        request(options, function (error, response, body) {
+            body = JSON.parse(body);
+            // Successful connection without errors
+            if (!error && response.statusCode == 200 && Array.isArray(body.data) && body.data.length > 0) {
 
-        // Set the nearest date to the lowest of the two dates set above
-        var responseNearestDate = (responseNearestDatePracticalTest <= responseNearestDateWrittenTest ? responseNearestDatePracticalTest : responseNearestDateWrittenTest);
+                // The fist array is always the one that is nearest in time
+                var responseNearestDateWrittenTest = new Date(body.data[0].occasions[0].date + " " + body.data[0].occasions[0].time);
+                var responseNearestDatePracticalTest = new Date(body.data[0].occasions[1].date + " " + body.data[0].occasions[1].time);
 
-        var lastSavedDate = null;
-        if(element.lastSavedDate !== null){
-          lastSavedDate = new Date(element.lastSavedDate);
-        }
+                // Set the nearest date to the lowest of the two dates set above
+                var responseNearestDate = (responseNearestDatePracticalTest <= responseNearestDateWrittenTest ? responseNearestDatePracticalTest : responseNearestDateWrittenTest);
 
-        //there is a new time that is closer than the previous date or lastdate is not set()
-        // Time from API must be nearer than the time we have stored. lastSavedDate is null when the program initially starts
-        if (responseNearestDate < lastSavedDate || lastSavedDate === null) {
-          element.lastSavedDate = responseNearestDate.toUTCString();
+                var lastSavedDate = null;
+                if (element.lastSavedDate !== null) {
+                    lastSavedDate = new Date(element.lastSavedDate);
+                }
 
-          // No push should be sent in the beginning as it is not necessary.
-          if(element.firstLoad === false){
-            // send push to pushbullet
-            pushToPushbullet(element.city, responseNearestDate.toUTCString());
-            consoleLog("Pushed to pushbullet for city " + element.city);
-          }
-          else {
-            consoleLog("First load, not sending push");
-            element.firstLoad = false;
-          }
-        }
-      }
-      else if(error){
-        consoleLog("Something went wrong. See console for more info. ");
-        console.error(error);
-      }
+                //there is a new time that is closer than the previous date or lastdate is not set()
+                // Time from API must be nearer than the time we have stored. lastSavedDate is null when the program initially starts
+                if (responseNearestDate < lastSavedDate || lastSavedDate === null) {
+                    element.lastSavedDate = responseNearestDate.toUTCString();
+
+                    // No push should be sent in the beginning as it is not necessary.
+                    if (element.firstLoad === false) {
+                        // send push to pushbullet
+                        pushToPushbullet(element.city, responseNearestDate.toUTCString());
+                        consoleLog("Pushed to pushbullet for city " + element.city);
+                    }
+                    else {
+                        consoleLog("First load, not sending push");
+                        element.firstLoad = false;
+                    }
+                }
+            }
+            else if (error) {
+                consoleLog("Something went wrong. See console for more info. ");
+                console.error(error);
+            }
+        });
+
     });
 
-  });
-
 }
 
 
-
-
-
-function pushToPushbullet(city, time){
-  pusher.note("", "Ny tid för " + city, "Tid: " + time);
+function pushToPushbullet(city, time) {
+    pusher.note("", "Ny tid för " + city, "Tid: " + time);
 }
 
 
-function consoleLog(text){
-  console.log(new Date(Date.now()).toUTCString() + ": " + text)
+function consoleLog(text) {
+    console.log(new Date(Date.now()).toUTCString() + ": " + text)
 }
 
 
-function schedule2(){
-  consoleLog("First start or restart due to error")
-  console.log(locationSettings);
-  schedule();
+function schedule2() {
+    consoleLog("First start or restart due to error")
+    console.log(locationSettings);
+    schedule();
 }
 
 var minutes = config.intervalMinutes;
