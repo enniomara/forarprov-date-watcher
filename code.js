@@ -109,18 +109,24 @@ function schedule(){
       // Successful connection without errors
       if (!error && response.statusCode == 200 && Array.isArray(body.data) && body.data.length > 0) {
 
-        var responseNearestDate = new Date(body.data[0].occasions[0].date + " " + body.data[0].occasions[0].time);
+        // The fist array is always the one that is nearest in time
+        var responseNearestDateWrittenTest = new Date(body.data[0].occasions[0].date + " " + body.data[0].occasions[0].time);
+        var responseNearestDatePracticalTest = new Date(body.data[0].occasions[1].date + " " + body.data[0].occasions[1].time);
+
+        // Set the nearest date to the lowest of the two dates set above
+        var responseNearestDate = (responseNearestDatePracticalTest <= responseNearestDateWrittenTest ? responseNearestDatePracticalTest : responseNearestDateWrittenTest);
 
         var lastSavedDate = null;
         if(element.lastSavedDate !== null){
           lastSavedDate = new Date(element.lastSavedDate);
         }
 
-        // if cost is for test && (there is a new time that is closer than the previous date or lastdate is not set()
-
-        if (body.data[0].cost == "1.200 kr" && (responseNearestDate < lastSavedDate || lastSavedDate === null)) {
+        //there is a new time that is closer than the previous date or lastdate is not set()
+        // Time from API must be nearer than the time we have stored. lastSavedDate is null when the program initially starts
+        if (responseNearestDate < lastSavedDate || lastSavedDate === null) {
           element.lastSavedDate = responseNearestDate.toUTCString();
 
+          // No push should be sent in the beginning as it is not necessary.
           if(element.firstLoad === false){
             // send push to pushbullet
             pushToPushbullet(element.city, responseNearestDate.toUTCString());
@@ -130,11 +136,10 @@ function schedule(){
             consoleLog("First load, not sending push");
             element.firstLoad = false;
           }
-
         }
       }
       else if(error){
-        consoleLog("Something went wrong");
+        consoleLog("Something went wrong. See console for more info. ");
         console.error(error);
       }
     });
